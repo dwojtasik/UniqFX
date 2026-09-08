@@ -3,7 +3,7 @@ My shader collection for [ReShade](https://reshade.me).
 
 ## FakeBumpMap
 
-Relights large planes with a textured normal and extrude surface fragemnts by pixel walk.
+Relights large planes with a textured normal and extrudes surfaces fragments by pixel walk.
 
 * Requires [iMMERSE](https://github.com/martymcmodding/iMMERSE) shaders installed
 * Supports multiple textured normals providers:
