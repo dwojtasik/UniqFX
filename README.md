@@ -8,6 +8,7 @@ Relights large planes with a textured normal and extrudes surfaces fragments by 
 * Requires [iMMERSE](https://github.com/martymcmodding/iMMERSE) shaders installed
 * Supports multiple textured normals providers:
   * [iMMERSE: Launchpad](https://github.com/martymcmodding/iMMERSE) with Smoothed + Textured Normal Map Mode
+    * recommended provider as it offers better results
   * [LUMENITE Kernel 2.0](https://github.com/umar-afzaal/LumeniteFX) with SMOOTH_NORMALS=1
     * requries Large Planes Only <= 1.0
 

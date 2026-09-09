@@ -1,12 +1,14 @@
 /*=============================================================================
-    UniqFX: FakeBumpMap
-    Author: Dominik Wojtasik
-    Source: https://github.com/dwojtasik/UniqFX
+    UniqFX : FakeBumpMap
+    Version: 2026.09.09
+    Author : Dominik Wojtasik
+    License: MIT
+    Source : https://github.com/dwojtasik/UniqFX
 
     Requires iMMERSE shaders installed: https://github.com/martymcmodding/iMMERSE
 
     Relights large planes with a textured normal: colour *= (Nt·L+a)/(Ng·L+a)
-    Optionally allows to extrude surface fragments by pixel walk.
+    Experimentally allows to extrude surface fragments by pixel walk.
 
     Place below selected Smoothed+Textured Normal Map provider:
     - iMMERSE: Launchpad (https://github.com/martymcmodding/iMMERSE)
@@ -36,8 +38,8 @@ namespace Kernel
     sampler sNormals { Texture = tNormals; };
 }
 
-texture FBM_EdgeTex { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
-texture FBM_BlurTex { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = RGBA8; };
+texture FBM_EdgeTex { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = R8; };
+texture FBM_BlurTex { Width = BUFFER_WIDTH; Height = BUFFER_HEIGHT; Format = R8; };
 sampler FBM_EdgeSamp
 {
     Texture = FBM_EdgeTex;
@@ -66,7 +68,7 @@ uniform int UI_VIEW <
 
 uniform int UI_PROVIDER <
     ui_type = "combo";
-    ui_label = "Textured Normal Provedier";
+    ui_label = "Textured Normal Provider";
     ui_items = "iMMERSE: Launchpad\0LUMENITE: Kernel 2.0\0";
     ui_tooltip = "iMMERSE Launchpad: Enable with Smoothed + Textured\n"
                  "Normal Map Mode and place on top.\n"
@@ -116,6 +118,12 @@ uniform float UI_EXTEND <
     ui_min = 0.0; ui_max = 12.0;
     ui_category = "Normal Mapping";
 > = 2.5;
+
+uniform bool UI_EXTEND_INVERT <
+    ui_label = "Invert Extend";
+    ui_tooltip = "Reverse the pixel-walk direction. Off = current uphill walk.";
+    ui_category = "Normal Mapping";
+> = false;
 
 uniform bool UI_INVERT <
     ui_label = "Invert Normal";
@@ -235,16 +243,46 @@ VSOut VS_Full(uint id : SV_VertexID)
 
 static const float3 FBM_LUMA = float3(0.2126, 0.7152, 0.0722);
 
+static const float2 FBM_DIRS[8] =
+{
+    float2( 0.9238795,  0.3826834),
+    float2( 0.3826834,  0.9238795),
+    float2(-0.3826834,  0.9238795),
+    float2(-0.9238795,  0.3826834),
+    float2(-0.9238795, -0.3826834),
+    float2(-0.3826834, -0.9238795),
+    float2( 0.3826834, -0.9238795),
+    float2( 0.9238795, -0.3826834)
+};
+
+static const float2 FBM_CREASE[8] =
+{
+    float2( 1.0,  0.0), float2(-1.0,  0.0),
+    float2( 0.0,  1.0), float2( 0.0, -1.0),
+    float2( 3.0,  0.0), float2(-3.0,  0.0),
+    float2( 0.0,  3.0), float2( 0.0, -3.0)
+};
+
+static const float FBM_GAUSS_W[9] =
+{
+    1.000000, 0.982161, 0.930549, 0.850437, 0.749809,
+    0.637628, 0.523131, 0.413986, 0.315964
+};
+
 bool fbm_has_depth(float z)
 {
     return z > 1e-4 && z < 0.999;
 }
 
+float3 fbm_unit(float3 n, float min_len2)
+{
+    float len2 = dot(n, n);
+    return (len2 > min_len2) ? n * rsqrt(len2) : float3(0.0, 0.0, 1.0);
+}
+
 float3 fbm_kernel_geo(float2 uv)
 {
-    float3 n = tex2Dlod(Kernel::sNormals, float4(uv, 0, 0)).rgb;
-    float len = length(n);
-    return (len > 1e-4) ? n / len : float3(0.0, 0.0, 1.0);
+    return fbm_unit(tex2Dlod(Kernel::sNormals, float4(uv, 0, 0)).rgb, 1e-8);
 }
 
 float3 fbm_kernel_macro(float2 uv)
@@ -255,7 +293,7 @@ float3 fbm_kernel_macro(float2 uv)
     n += fbm_kernel_geo(uv - float2(d.x, 0.0));
     n += fbm_kernel_geo(uv + float2(0.0, d.y));
     n += fbm_kernel_geo(uv - float2(0.0, d.y));
-    return normalize(n);
+    return fbm_unit(n, 1e-8);
 }
 
 float3 fbm_kernel_bump(float2 uv, float3 geo)
@@ -273,70 +311,125 @@ float3 fbm_kernel_bump(float2 uv, float3 geo)
     return normalize(T * bump.x + B * bump.y + geo * bump.z);
 }
 
-float3 fbm_Ng(float2 uv)
+void fbm_NgNt(float2 uv, out float3 ng, out float3 nt)
 {
+    ng = float3(0.0, 0.0, 1.0);
+    nt = ng;
+
     [branch]
     if(UI_PROVIDER == 1)
     {
         float3 kn = fbm_kernel_geo(uv);
-        return (UI_KERNEL_BUMP <= 0.001) ? fbm_kernel_macro(uv) : kn;
+        [flatten]
+        if(UI_KERNEL_BUMP <= 0.001)
+        {
+            ng = fbm_kernel_macro(uv);
+            nt = kn;
+        }
+        else
+        {
+            ng = kn;
+            nt = fbm_kernel_bump(uv, kn);
+        }
     }
+    else
+    {
+        nt = normalize(Deferred::get_normals(uv));
+        float3 g = Deferred::get_geometry_normals(uv);
+        ng = dot(g, g) > 1e-4 ? normalize(g) : nt;
+    }
+}
 
-    float3 g = Deferred::get_geometry_normals(uv);
-    float3 t = Deferred::get_normals(uv);
-    return dot(g, g) > 1e-4 ? normalize(g) : normalize(t);
+float3 fbm_Ng(float2 uv)
+{
+    float3 n = float3(0.0, 0.0, 1.0);
+
+    [branch]
+    if(UI_PROVIDER == 1)
+    {
+        float3 kn = fbm_kernel_geo(uv);
+        n = (UI_KERNEL_BUMP <= 0.001) ? fbm_kernel_macro(uv) : kn;
+    }
+    else
+    {
+        float3 g = Deferred::get_geometry_normals(uv);
+        n = dot(g, g) > 1e-4 ? normalize(g)
+                             : normalize(Deferred::get_normals(uv));
+    }
+    return n;
 }
 
 float3 fbm_Nt(float2 uv)
 {
+    float3 n = float3(0.0, 0.0, 1.0);
+
     [branch]
     if(UI_PROVIDER == 1)
     {
         float3 kn = fbm_kernel_geo(uv);
-        return (UI_KERNEL_BUMP <= 0.001) ? kn : fbm_kernel_bump(uv, kn);
+        n = (UI_KERNEL_BUMP <= 0.001) ? kn : fbm_kernel_bump(uv, kn);
     }
-    return normalize(Deferred::get_normals(uv));
+    else
+        n = normalize(Deferred::get_normals(uv));
+
+    return n;
 }
 
-float fbm_on_plane(float2 uv, float3 p, float3 n)
+float3 fbm_guide(float2 uv, float3 fallback)
 {
-    float z = Depth::get_linear_depth(uv);
+    float3 g = fallback;
+
+    [branch]
+    if(UI_PROVIDER != 1)
+    {
+        float3 a = Deferred::get_albedo(uv);
+        if(dot(a, 1.0) > 1e-5)
+            g = a;
+    }
+    return g;
+}
+
+float fbm_on_plane(float2 uv, float3 p, float3 n, float z, float plane_s_rcp)
+{
     if(!fbm_has_depth(z))
         return 0.0;
     float3 q = Camera::uv_to_proj(uv, Camera::depth_to_z(z));
-    return saturate(1.0 - abs(dot(q - p, n)) / (0.035 * max(abs(p.z), 1.0)));
+    return saturate(1.0 - abs(dot(q - p, n)) * plane_s_rcp);
 }
 
 float3 fbm_view_p(float2 uv)
 {
-    float z = Depth::get_linear_depth(uv);
+    return Camera::uv_to_proj(uv);
+}
+
+float3 fbm_view_p(float2 uv, float z)
+{
     return Camera::uv_to_proj(uv, Camera::depth_to_z(z));
 }
 
-float3 fbm_raw_Ng(float2 uv)
+float3 fbm_raw_Ng(float2 uv, float3 p)
 {
     float2 d = BUFFER_PIXEL_SIZE * 2.0;
-    float3 p  = fbm_view_p(uv);
-    float3 pr = fbm_view_p(uv + float2(d.x, 0.0));
-    float3 pu = fbm_view_p(uv + float2(0.0, d.y));
-    float3 n = cross(pr - p, pu - p);
-    float len = length(n);
-    return (len > 1e-12) ? n / len : float3(0.0, 0.0, 1.0);
+    return fbm_unit(
+        cross(fbm_view_p(uv + float2(d.x, 0.0)) - p,
+              fbm_view_p(uv + float2(0.0, d.y)) - p),
+        1e-24);
 }
 
-float fbm_tap_crease(float2 uv1, float z0, float3 n_plane, float3 n_raw0, float facing)
+float fbm_tap_crease(float2 uv1, float z0, float z0_rcp, float3 n_plane, float3 n_raw0, float facing)
 {
     if(!Math::inside_screen(uv1))
         return 0.0;
     float z1 = Depth::get_linear_depth(uv1);
     if(!fbm_has_depth(z1))
         return 0.0;
-    float rel = (z1 - z0) / max(z0, 1e-4);
+    float rel = (z1 - z0) * z0_rcp;
     if(rel < -0.012)
         return 0.0;
 
+    float3 p1 = fbm_view_p(uv1, z1);
     float n_lp = saturate((0.76 - saturate(dot(n_plane, fbm_Ng(uv1)))) / 0.30);
-    float n_rw = saturate((0.88 - saturate(dot(n_raw0, fbm_raw_Ng(uv1)))) / 0.32);
+    float n_rw = saturate((0.88 - saturate(dot(n_raw0, fbm_raw_Ng(uv1, p1)))) / 0.32);
     float d_br = saturate((abs(rel) - 0.0022) / 0.012);
     return max(n_lp, facing * max(n_rw, d_br));
 }
@@ -376,9 +469,31 @@ float3 fbm_encode_n(float3 n)
     return n * 0.5 + 0.5;
 }
 
+float fbm_ndl(float3 n, float3 l, float wrap)
+{
+    float d = dot(n, l);
+    return lerp(saturate(d), d * 0.5 + 0.5, wrap) + 0.28;
+}
+
+float fbm_wrap(float3 ng, float3 L)
+{
+    return (UI_PROVIDER == 1)
+         ? saturate((0.35 - dot(ng, L)) / 0.50)
+         : 0.0;
+}
+
+float fbm_pow12(float x)
+{
+    x = saturate(x);
+    float x4 = x * x;
+    x4 *= x4;
+    return x4 * x4 * x4;
+}
+
 float fbm_gauss_axis(sampler2D samp, float2 uv, float2 axis)
 {
     float z = Depth::get_linear_depth(uv);
+    float z_rcp = rcp(max(z, 1e-4));
     float acc = 0.0;
     float wsum = 1e-4;
 
@@ -389,21 +504,21 @@ float fbm_gauss_axis(sampler2D samp, float2 uv, float2 axis)
         if(!Math::inside_screen(uvk))
             continue;
         float zk = Depth::get_linear_depth(uvk);
-        float rel = (zk - z) / max(z, 1e-4);
-        if(rel < -0.012)
+        if((zk - z) * z_rcp < -0.012)
             continue;
-        float wk = exp(-k * k * 0.018);
+        int ak = k < 0 ? -k : k;
+        float wk = FBM_GAUSS_W[ak];
         acc += tex2Dlod(samp, uvk, 0).r * wk;
         wsum += wk;
     }
-    return acc / wsum;
+    return acc * rcp(wsum);
 }
 
 /*=============================================================================
 	Passes
 =============================================================================*/
 
-void PS_Edge(VSOut i, out float4 o : SV_Target0)
+void PS_Edge(VSOut i, out float o : SV_Target0)
 {
     float z = Depth::get_linear_depth(i.uv);
     [branch]
@@ -413,36 +528,29 @@ void PS_Edge(VSOut i, out float4 o : SV_Target0)
         return;
     }
 
-    float3 p0      = fbm_view_p(i.uv);
+    float z_rcp = rcp(max(z, 1e-4));
+    float3 p0      = fbm_view_p(i.uv, z);
     float3 n_plane = fbm_Ng(i.uv);
-    float3 n_raw   = fbm_raw_Ng(i.uv);
+    float3 n_raw   = fbm_raw_Ng(i.uv, p0);
     float  facing  = saturate((abs(dot(n_plane, normalize(-p0))) - 0.16) / 0.28);
     float2 px = BUFFER_PIXEL_SIZE;
     float e = 0.0;
 
-    e = max(e, fbm_tap_crease(i.uv + float2( px.x,  0.0) * 1.0, z, n_plane, n_raw, facing));
-    e = max(e, fbm_tap_crease(i.uv + float2(-px.x,  0.0) * 1.0, z, n_plane, n_raw, facing));
-    e = max(e, fbm_tap_crease(i.uv + float2( 0.0,  px.y) * 1.0, z, n_plane, n_raw, facing));
-    e = max(e, fbm_tap_crease(i.uv + float2( 0.0, -px.y) * 1.0, z, n_plane, n_raw, facing));
-    e = max(e, fbm_tap_crease(i.uv + float2( px.x,  0.0) * 3.0, z, n_plane, n_raw, facing));
-    e = max(e, fbm_tap_crease(i.uv + float2(-px.x,  0.0) * 3.0, z, n_plane, n_raw, facing));
-    e = max(e, fbm_tap_crease(i.uv + float2( 0.0,  px.y) * 3.0, z, n_plane, n_raw, facing));
-    e = max(e, fbm_tap_crease(i.uv + float2( 0.0, -px.y) * 3.0, z, n_plane, n_raw, facing));
+    [loop]
+    for(int t = 0; t < 8; t++)
+        e = max(e, fbm_tap_crease(i.uv + FBM_CREASE[t] * px, z, z_rcp, n_plane, n_raw, facing));
 
-    e = smoothstep(0.12, 0.48, e);
-    o = float4(e, e, e, 1.0);
+    o = smoothstep(0.12, 0.48, e);
 }
 
-void PS_BlurH(VSOut i, out float4 o : SV_Target0)
+void PS_BlurH(VSOut i, out float o : SV_Target0)
 {
-    float e = fbm_gauss_axis(FBM_EdgeSamp, i.uv, float2(BUFFER_PIXEL_SIZE.x, 0.0));
-    o = float4(e, e, e, 1.0);
+    o = fbm_gauss_axis(FBM_EdgeSamp, i.uv, float2(BUFFER_PIXEL_SIZE.x, 0.0));
 }
 
-void PS_BlurV(VSOut i, out float4 o : SV_Target0)
+void PS_BlurV(VSOut i, out float o : SV_Target0)
 {
-    float e = fbm_gauss_axis(FBM_BlurSamp, i.uv, float2(0.0, BUFFER_PIXEL_SIZE.y));
-    o = float4(e, e, e, 1.0);
+    o = fbm_gauss_axis(FBM_BlurSamp, i.uv, float2(0.0, BUFFER_PIXEL_SIZE.y));
 }
 
 void PS_Map(VSOut i, out float3 o : SV_Target0)
@@ -455,22 +563,20 @@ void PS_Map(VSOut i, out float3 o : SV_Target0)
     if(!fbm_has_depth(z))
         return;
 
+    float z_rcp = rcp(max(z, 1e-4));
     float fade = saturate(1.0 - (z - UI_FADE_START) / max(UI_FADE_LEN, 1e-4));
     float hud  = fbm_hud(i.uv);
 
-    float3 p  = Camera::uv_to_proj(i.uv, Camera::depth_to_z(z));
-    float3 ng = fbm_Ng(i.uv);
-    float3 nt = fbm_Nt(i.uv);
-    float3 col0 = src;
-    float  lum0 = dot(src, FBM_LUMA);
+    float3 p = fbm_view_p(i.uv, z);
+    float3 ng = float3(0.0, 0.0, 1.0);
+    float3 nt = ng;
+    fbm_NgNt(i.uv, ng, nt);
 
-    float3 g0;
-    {
-        float3 a = Deferred::get_albedo(i.uv);
-        g0 = dot(a, 1.0) > 1e-5 ? a : src;
-    }
+    float  lum0 = dot(src, FBM_LUMA);
+    float3 g0 = fbm_guide(i.uv, src);
     float lg = max(dot(g0, FBM_LUMA), 1e-3);
     float2 chroma0 = g0.rg / lg;
+    float plane_s_rcp = rcp(0.035 * max(abs(p.z), 1.0));
 
     float4 nacc = 0.0;
     float2 pacc = float2(0.0, 1e-4);
@@ -478,21 +584,21 @@ void PS_Map(VSOut i, out float3 o : SV_Target0)
     float2 chr_src = src.rg / max(lum0, 1e-3);
     float2 acc_f = 0.0;
     float3 acc_w = 0.0;
+    float2 acc_l = float2(0.0, 1e-4);
 
     [loop]
     for(int s = 0; s < 8; s++)
     {
-        float ang = 0.78539816 * (s + 0.5);
-        float2 dir; sincos(ang, dir.y, dir.x);
+        float2 dir = FBM_DIRS[s];
 
         float2 uv_p = i.uv + dir * 32.0 * BUFFER_PIXEL_SIZE;
         if(Math::inside_screen(uv_p))
         {
             float zp = Depth::get_linear_depth(uv_p);
-            float rp = (zp - z) / max(z, 1e-4);
+            float rp = (zp - z) * z_rcp;
             if(rp > -0.012)
             {
-                float pw = fbm_on_plane(uv_p, p, ng);
+                float pw = fbm_on_plane(uv_p, p, ng, zp, plane_s_rcp);
                 float ngd = saturate(dot(ng, fbm_Ng(uv_p)));
                 if(pw > 0.04 && ngd > 0.65)
                 {
@@ -506,42 +612,40 @@ void PS_Map(VSOut i, out float3 o : SV_Target0)
         if(Math::inside_screen(uv_n))
         {
             float zn = Depth::get_linear_depth(uv_n);
-            float rn = (zn - z) / max(z, 1e-4);
+            float rn = (zn - z) * z_rcp;
             if(rn < -0.010)
                 occ = max(occ, saturate((-rn - 0.010) / 0.035));
-            else if(fbm_on_plane(uv_n, p, ng) > 0.2)
+            else if(fbm_on_plane(uv_n, p, ng, zn, plane_s_rcp) > 0.2)
             {
-                float3 a1 = Deferred::get_albedo(uv_n);
-                if(dot(a1, 1.0) < 1e-5)
-                    a1 = tex2Dlod(ColorInput, uv_n, 0).rgb;
+                float3 c1 = tex2Dlod(ColorInput, uv_n, 0).rgb;
+                float3 a1 = fbm_guide(uv_n, c1);
                 float l1 = max(dot(a1, FBM_LUMA), 1e-3);
                 float2 dc = a1.rg / l1 - chroma0;
                 float wc = exp(-dot(dc, dc) * 40.0);
                 nacc += float4(fbm_Nt(uv_n) * wc, wc);
 
-                float3 c1 = tex2Dlod(ColorInput, uv_n, 0).rgb;
-                float ln = max(dot(c1, FBM_LUMA), 1e-4);
+                float ln = max(dot(max(c1, 0.0), FBM_LUMA), 1e-4);
                 acc_f.x += abs(log2(ln) - log2(max(lum0, 1e-4)));
                 acc_f.y += 1.0;
+                acc_l.x += ln;
+                acc_l.y += 1.0;
             }
         }
 
-        float2 uv_e = i.uv + dir * 3.0 * BUFFER_PIXEL_SIZE;
         float2 uv_o = i.uv + dir * 6.0 * BUFFER_PIXEL_SIZE;
-        float re = (Depth::get_linear_depth(uv_e) - z) / max(z, 1e-4);
-        float ro = (Depth::get_linear_depth(uv_o) - z) / max(z, 1e-4);
-
-        if(re < -0.010)
-            occ = max(occ, saturate((-re - 0.010) / 0.035));
-        if(ro < -0.010)
-            occ = max(occ, saturate((-ro - 0.010) / 0.035) * 0.65);
+        if(Math::inside_screen(uv_o))
+        {
+            float ro = (Depth::get_linear_depth(uv_o) - z) * z_rcp;
+            if(ro < -0.010)
+                occ = max(occ, saturate((-ro - 0.010) / 0.035) * 0.65);
+        }
 
         float2 uv_b = i.uv + dir * 10.0 * BUFFER_PIXEL_SIZE;
         if(Math::inside_screen(uv_b))
         {
             float zb = Depth::get_linear_depth(uv_b);
-            float rb = (zb - z) / max(z, 1e-4);
-            if(rb > -0.012 && fbm_on_plane(uv_b, p, ng) > 0.15)
+            float rb = (zb - z) * z_rcp;
+            if(rb > -0.012 && fbm_on_plane(uv_b, p, ng, zb, plane_s_rcp) > 0.15)
             {
                 float3 cb = tex2Dlod(ColorInput, uv_b, 0).rgb;
                 float lb = max(dot(cb, FBM_LUMA), 1e-4);
@@ -581,11 +685,30 @@ void PS_Map(VSOut i, out float3 o : SV_Target0)
     float2 uvh = i.uv;
 
     [branch]
+    if(UI_VIEW == 1)
+    {
+        o = fbm_encode_n(nt);
+        return;
+    }
+    if(UI_VIEW == 3)
+    {
+        o = lerp(float3(1, 0, 0), float3(mask, fade, 1.0 - edge_feather), hud);
+        return;
+    }
+    if(UI_VIEW == 2)
+    {
+        float3 Vn = normalize(-p);
+        float3 Ld = normalize(Vn + float3(0.0, 1.0, 0.0) * 0.35 + ng * 0.15);
+        float wrap = fbm_wrap(ng, Ld);
+        o = saturate(0.5 * fbm_ndl(nt, Ld, wrap)
+                   / max(fbm_ndl(ng, Ld, wrap), 1e-3)).xxx;
+        return;
+    }
+
+    [branch]
     if(w > 0.002 && (UI_STRENGTH > 0.01 || UI_EXTEND > 0.05))
     {
         float3 V = normalize(-p);
-        float3 Up = float3(0.0, 1.0, 0.0);
-        float3 L = normalize(V + Up * 0.35 + ng * 0.15);
 
         [branch]
         if(UI_EXTEND > 0.05)
@@ -593,6 +716,8 @@ void PS_Map(VSOut i, out float3 o : SV_Target0)
             float3 T, B;
             fbm_tbn(i.uv, p, ng, T, B);
             float2 sl = -float2(dot(nt, T), dot(nt, B)) / max(dot(nt, ng), 0.22);
+            if(UI_EXTEND_INVERT)
+                sl = -sl;
             float mag = length(sl);
             float horiz = saturate((abs(ng.y) - 0.48) / 0.38);
             float facing = saturate(abs(dot(ng, V)));
@@ -609,54 +734,61 @@ void PS_Map(VSOut i, out float3 o : SV_Target0)
                 for(int k = 0; k < 8; k++)
                 {
                     float2 nxt = uvh + dir * step_px * BUFFER_PIXEL_SIZE;
-                    if(!Math::inside_screen(nxt) || fbm_on_plane(nxt, p, ng) < pmin)
+                    if(!Math::inside_screen(nxt))
                         break;
                     float z1 = Depth::get_linear_depth(nxt);
-                    if(abs(z1 - z) / max(z, 1e-4) > zmax)
+                    if(fbm_on_plane(nxt, p, ng, z1, plane_s_rcp) < pmin)
+                        break;
+                    if(abs(z1 - z) * z_rcp > zmax)
                         break;
                     uvh = nxt;
                 }
             }
         }
 
-        float3 samp = tex2Dlod(ColorInput, uvh, 0).rgb;
+        [branch]
+        if(UI_VIEW == 4)
+        {
+            o = float3(saturate((uvh - i.uv) / BUFFER_PIXEL_SIZE * 0.12 + 0.5), 0.5);
+            return;
+        }
+
+        float3 L = normalize(V + float3(0.0, 1.0, 0.0) * 0.35 + ng * 0.15);
+        float3 samp = max(tex2Dlod(ColorInput, uvh, 0).rgb, 0.0);
         float lum_s = dot(samp, FBM_LUMA);
+        float lum_o = max(dot(max(src, 0.0), FBM_LUMA), 0.0);
+        float hole = smoothstep(0.20, 0.48, lum_o)
+                   * saturate((lum_o - lum_s) / max(lum_o, 1e-3));
+        samp = lerp(samp, max(src, 0.0), hole);
+        lum_s = dot(samp, FBM_LUMA);
 
-        float geom = saturate(dot(ng, L)) + 0.28;
-        float bump = saturate(dot(nt, L)) + 0.28;
-        float ratio = bump / geom;
+        float wrap = fbm_wrap(ng, L);
+        float geom = fbm_ndl(ng, L, wrap);
+        float bump = fbm_ndl(nt, L, wrap);
+        float ratio = bump / max(geom, 1e-3);
 
-        float spec_g = pow(saturate(dot(ng, V)), 12.0);
-        float spec_n = pow(saturate(dot(nt, V)), 12.0);
-        float spec = max(spec_n - spec_g, 0.0) * UI_GLOSS;
+        float spec = max(fbm_pow12(dot(nt, V)) - fbm_pow12(dot(ng, V)), 0.0) * UI_GLOSS;
 
         float ndot = saturate(dot(nt, ng));
         float cavity = (UI_CAVITY <= 0.001) ? 1.0 : pow(ndot, UI_CAVITY);
 
-        float shade = lerp(1.0, ratio, UI_STRENGTH) * cavity;
-        shade = clamp(shade, 0.20, 3.5);
+        float shade = 1.0 + (ratio - 1.0) * UI_STRENGTH;
+        shade = clamp(shade, 0.20, 3.5) * cavity;
 
-        float hl = smoothstep(0.58, 0.92, lum_s);
-        shade = lerp(shade, 1.0, hl);
-        spec *= (1.0 - shadow);
+        float neigh = acc_l.x / acc_l.y;
+        float peak = saturate((lum_s - neigh) / max(neigh, 0.04));
+        float hl_protect = max(smoothstep(0.32, 0.68, lum_s),
+                               smoothstep(0.08, 0.30, peak));
+        float hl_spec = smoothstep(0.58, 0.92, lum_s);
+        shade = max(shade, lerp(0.20, 0.90, hl_protect));
+        shade = lerp(shade, max(shade, 1.0), hl_protect);
+        spec *= (1.0 - shadow) * (1.0 - hl_spec);
 
-        float lum1 = lum_s * shade + spec * lum_s * (1.0 - hl);
-        float3 chroma = samp / max(lum_s, 1e-4);
-        float3 col = chroma * lum1;
-
+        float3 col = max(samp * shade + spec * samp, 0.0);
         o = lerp(src, col, w);
     }
-
-    [branch]
-    if(UI_VIEW == 1)
-        o = fbm_encode_n(nt);
-    else if(UI_VIEW == 2)
-        o = saturate(0.5 * (saturate(dot(nt, normalize(-p))) + 0.28)
-                   / (saturate(dot(ng, normalize(-p))) + 0.28)).xxx;
-    else if(UI_VIEW == 3)
-        o = lerp(float3(1, 0, 0), float3(mask, fade, 1.0 - edge_feather), hud);
     else if(UI_VIEW == 4)
-        o = float3(saturate((uvh - i.uv) / BUFFER_PIXEL_SIZE * 0.12 + 0.5), 0.5);
+        o = float3(0.5, 0.5, 0.5);
 }
 
 /*=============================================================================
@@ -676,7 +808,7 @@ technique FakeBumpMap
 >
 {
 #ifdef IPC_REQUEST_FEATURE
-    IPC_REQUEST_FEATURE(MARTYSMODS_IPC_FEATURE_NORMALS | MARTYSMODS_IPC_FEATURE_ALBEDO)
+    IPC_REQUEST_FEATURE(MARTYSMODS_IPC_FEATURE_NORMALS)
 #endif
     pass Edge { VertexShader = VS_Full; PixelShader = PS_Edge; RenderTarget = FBM_EdgeTex; }
     pass BlurH { VertexShader = VS_Full; PixelShader = PS_BlurH; RenderTarget = FBM_BlurTex; }
