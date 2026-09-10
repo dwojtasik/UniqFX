@@ -1,6 +1,28 @@
 # UniqFX
 My shader collection for [ReShade](https://reshade.me).
 
+## Conditional UI Mask
+
+Complex solution for UI masking in ReShade.
+Allows to setup multiple backbuffer checkpoints and restore them on given UI boxes using conditional comparisons of colors and depths at given samples.
+
+Features:
+* Multiple UI masks displayed based on conditions
+* Multiple matchers for colors and depth
+* Multiple backbuffer checkpoints to restore data from
+* In-game setup UI for simplified usage - use setup and debug view to preview all important details
+* Automatic scaling of created presets - game resolution no longer matters
+
+### Combined debug view
+
+https://github.com/user-attachments/assets/65a27929-62a5-469e-a2b5-e8c320c755d4
+
+### In game sampling
+
+<p align="center">
+  <img src="https://github.com/dwojtasik/SliderCompareHtml/blob/main/assets/UniqFX/ConditionalUIMask/sampling.gif?raw=true"/>
+</p>
+
 ## FakeBumpMap
 
 Relights large planes with a textured normal and extrudes surfaces fragments by pixel walk.
