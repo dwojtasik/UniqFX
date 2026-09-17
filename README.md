@@ -1,6 +1,10 @@
 # UniqFX
 My shader collection for [ReShade](https://reshade.me).
 
+ * [Conditional UI Mask](#conditional-ui-mask)
+ * [FakeBumpMap](#fakebumpmap)
+ * [Depth Blur [DoF]](#depth-blur-dof)
+
 ## Conditional UI Mask
 
 Complex solution for UI masking in ReShade.
@@ -20,7 +24,7 @@ https://github.com/user-attachments/assets/65a27929-62a5-469e-a2b5-e8c320c755d4
 ### In game sampling
 
 <p align="center">
-  <img src="https://github.com/dwojtasik/SliderCompareHtml/blob/main/assets/UniqFX/ConditionalUIMask/sampling.gif?raw=true"/>
+  <img src="https://github.com/dwojtasik/SliderCompareHtml/blob/main/assets/UniqFX/ConditionalUIMask/sampling.gif?raw=true" width="50%"/>
 </p>
 
 ## FakeBumpMap
@@ -36,9 +40,40 @@ Relights large planes with a textured normal and extrudes surfaces fragments by 
 
 ### Comparison (click to open slider view)
 
-Splinter Cell Chaos Theory: [Bricks](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg&r_label=UniqFX:%20FakeBumpMap) | [Wall](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_1_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_1_a.jpg&r_label=UniqFX:%20FakeBumpMap) | [Bamboo](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_3_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_3_a.jpg&r_label=UniqFX:%20FakeBumpMap) | [Tiles](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_4_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_4_a.jpg&r_label=UniqFX:%20FakeBumpMap)
-
-[![FakeBumpMap SCCT](https://github.com/dwojtasik/SliderCompareHtml/blob/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg)](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg&r_label=UniqFX:%20FakeBumpMap)
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg&r_label=UniqFX:%20FakeBumpMap">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg" width="100%" alt="Bricks">
+      </a>
+      <br>
+      <b>Bricks</b>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_1_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_1_a.jpg&r_label=UniqFX:%20FakeBumpMap">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_1_a.jpg" width="100%" alt="Wall">
+      </a>
+      <br>
+      <b>Wall</b>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_3_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_3_a.jpg&r_label=UniqFX:%20FakeBumpMap">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_3_a.jpg" width="100%" alt="Bamboo">
+      </a>
+      <br>
+      <b>Bamboo</b>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_4_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_4_a.jpg&r_label=UniqFX:%20FakeBumpMap">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_4_a.jpg" width="100%" alt="Tiles">
+      </a>
+      <br>
+      <b>Tiles</b>
+    </td>
+  </tr>
+</table>
 
 ## Depth Blur [DoF]
 
