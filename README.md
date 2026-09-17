@@ -34,8 +34,16 @@ Relights large planes with a textured normal and extrudes surfaces fragments by 
   * [LUMENITE Kernel 2.0](https://github.com/umar-afzaal/LumeniteFX) with SMOOTH_NORMALS=1
     * requries Large Planes Only <= 1.0
 
-### Comparison
+### Comparison (click to open slider view)
 
 Splinter Cell Chaos Theory: [Bricks](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg&r_label=UniqFX:%20FakeBumpMap) | [Wall](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_1_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_1_a.jpg&r_label=UniqFX:%20FakeBumpMap) | [Bamboo](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_3_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_3_a.jpg&r_label=UniqFX:%20FakeBumpMap) | [Tiles](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_4_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_4_a.jpg&r_label=UniqFX:%20FakeBumpMap)
 
-![FakeBumpMap SCCT](https://github.com/dwojtasik/SliderCompareHtml/blob/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg)
+[![FakeBumpMap SCCT](https://github.com/dwojtasik/SliderCompareHtml/blob/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg)](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/FakeBumpMap/scct_2_a.jpg&r_label=UniqFX:%20FakeBumpMap)
+
+## Depth Blur [DoF]
+
+Separable Gaussian blur that follows linearized depth with autofocus option.
+
+### Comparison (click to open slider view)
+
+[![DepthBlur SCCT](https://github.com/dwojtasik/SliderCompareHtml/blob/main/assets/UniqFX/DepthBlur/scct_1_a.jpg)](https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/DepthBlur/scct_1_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/DepthBlur/scct_1_a.jpg&r_label=UniqFX:%20Depth%20Blur%20[DoF])
