@@ -8,7 +8,7 @@ Allows to setup multiple backbuffer checkpoints and restore them on given UI box
 
 Features:
 * Multiple UI masks displayed based on conditions
-* Multiple matchers for colors and depth
+* Multiple matchers for color and depth
 * Multiple backbuffer checkpoints to restore data from
 * In-game setup UI for simplified usage - use setup and debug view to preview all important details
 * Automatic scaling of created presets - game resolution no longer matters

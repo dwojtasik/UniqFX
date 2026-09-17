@@ -1,12 +1,15 @@
 /*===================================================================================================
     UniqFX : ConditionalUIMask
-    Version: 2026.09.15
+    Version: 2026.09.17
     Author : Dominik Wojtasik
     License: MIT
     Source : https://github.com/dwojtasik/UniqFX
 
     Allows to setup multiple backbuffer checkpoints and restore them on given UI boxes
     using conditional comparisons of colors and depths at given samples.
+
+    Boxes are processed one by one using numerical order. You can skip to Nth box in settings of
+    configured box if needed.
 
     Preprocessor resolution (UNIQ_UI_RES_WIDTH, UNIQ_UI_RES_HEIGHT) is used to determine the original
     dimensions of backbuffer used to create given preset. This allows to use same preset to be scaled
@@ -974,6 +977,8 @@ uniform int UI_HELP <
     ui_type = "radio";
     ui_label = " ";
     ui_text =
+        "Boxes are processed one by one using numerical order.\n"
+        "Follow below steps to setup new UI boxes:\n"
         "1. Setup preprocessor variables for this shader:\n"
         "  • UNIQ_UI_RES_WIDTH [num]\n"
         "      Width of original resolution that was used to setup UI.\n"
@@ -982,15 +987,13 @@ uniform int UI_HELP <
         "  • UNIQ_UI_CHECKPOINTS [1-3]\n"
         "      Number of backbuffer checkpoint passes to generate.\n"
         "  • CHECKPOINT_FRAME_SMOOTHING [0-3]\n"
-        "      Number of previous frames to additionally store per checkpoint\n"
-        "      to average results for color sampling.\n"
+        "      Number of previous frames to additionally store per checkpoint to average results for color sampling.\n"
         "  • UNIQ_UI_BOX_COUNT [1-15]\n"
         "      Number of UI boxes to configure.\n"
         "  • UNIQ_UI_CONDITIONS [1-5]\n"
         "      Max number of conditions to setup per UI box.\n"
         "  • ENABLE_SETUP_MODE [0-1]\n"
-        "      Enables setup mode where user can setup UI boxes & samples\n"
-        "      for conditions and preview their position visually.\n"
+        "      Enables setup mode where user can setup UI boxes & samples for conditions and preview their position visually.\n"
         "  • ENABLE_DEBUG_STATS [0-1]\n"
         "      Enables debug stats window.\n"
         "\n"
@@ -999,7 +1002,7 @@ uniform int UI_HELP <
         "3. Go into the Setup category of this shader and set\n"
         "   Debug View = Setup (Boxes + Samples).\n"
         "\n"
-        "4. Ensure that Show BOX 1 is selected.\n"
+        "4. Ensure that proper 'Sampling Checkpoint' pass and 'Show BOX 1' are selected.\n"
         "\n"
         "5. Long-click (left mouse button) anywhere on the game screen.\n"
         "   A sampling cursor with zoom should be visible.\n"
@@ -1008,23 +1011,22 @@ uniform int UI_HELP <
         "\n"
         "7. Let the long-click freeze the values inside Sampling Box.\n"
         "\n"
-        "8. Go into the BOX 1 category and copy sampled point values into\n"
-        "   Box X1 and Box Y1.\n"
+        "8. Go into the BOX 1 category and copy sampled point values into Box X1 and Box Y1.\n"
         "   Optionally you can use the already sampled color to create a condition.\n"
-        "   Copy R, G, B values into Match Color and (if useful) the depth value\n"
-        "   into Depth Threshold. Set the given mode for matching\n"
-        "   (read tooltips for more details).\n"
+        "   Copy R, G, B values into Match Color and (if useful) the depth value into Depth Threshold.\n"
+        "   Set the given mode for matching (read tooltips for more details).\n"
         "\n"
-        "9. Find the next pixel for the opposite corner of the UI and set it up\n"
-        "   the same way for Box X2 and Box Y2.\n"
+        "9. Find the next pixel for the opposite corner of the UI and set it up the same way for Box X2 and Box Y2.\n"
         "\n"
         "10. The box should be visible in mapped position on the Setup view.\n"
         "\n"
-        "11. Now you can setup required conditions that have to be matched\n"
-        "    to display this box. Use sampling as in step 5 to get values\n"
-        "    for condition matching.\n"
+        "11. Now you can setup required conditions that have to be matched to display this box.\n"
+        "    Use sampling as in step 5 to get values for condition matching.\n"
         "\n"
-        "12. Experiment with more complex rules.";
+        "12. Experiment with more complex rules.\n"
+        "\n"
+        "13. When setup is finished, set ENABLE_SETUP_MODE and ENABLE_DEBUG_STATS to 0.\n"
+        "    This will get rid of all setup/debug processing during compilation so shader will be more performant.";
     ui_category = "Help";
     ui_category_closed = true;
 >;
@@ -1490,7 +1492,6 @@ float2 ufx_orig_to_uv(float2 px)
 
 float4 ufx_clamp_orig_rect(float4 rpx)
 {
-    // Inclusive corners (X1,Y1,X2,Y2) -> xywh. Either corner order is OK.
     float4 r = float4(0.0, 0.0, 0.0, 0.0);
     float2 last = float2(0.0, 0.0);
     float2 a = float2(0.0, 0.0);
