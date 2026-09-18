@@ -81,8 +81,11 @@ Relights large planes with a textured normal and extrudes surfaces fragments by 
 Simplifies graphics to achieve visuals of game demake by:
 * scaling output into low-resolution and back
 * limiting color pallete and applying dithering
+* old-hardware depth fog
 * flatten lighting, blocky shadows and reduced specular gloss
 * merging nearby high-poly faces (based on depth and normal) into one shared plane that fakes low-poly geometry
+* fake distance LOD (minified textures, flatter lighting, coarser vertices)
+* snapping and jittering face intersections like PS1 vertices
 * pixelating & bluring textures
 
 ### Comparison (click to open slider view)
