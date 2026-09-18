@@ -3,6 +3,7 @@ My shader collection for [ReShade](https://reshade.me).
 
  * [Conditional UI Mask](#conditional-ui-mask)
  * [FakeBumpMap](#fakebumpmap)
+ * [Demake](#demake)
  * [Depth Blur [DoF]](#depth-blur-dof)
 
 ## Conditional UI Mask
@@ -71,6 +72,44 @@ Relights large planes with a textured normal and extrudes surfaces fragments by 
       </a>
       <br>
       <b>Tiles</b>
+    </td>
+  </tr>
+</table>
+
+## Demake
+
+Simplifies graphics to achieve visuals of game demake by:
+* scaling output into low-resolution and back
+* limiting color pallete and applying dithering
+* flatten lighting, blocky shadows and reduced specular gloss
+* merging nearby high-poly faces (based on depth and normal) into one shared plane that fakes low-poly geometry
+* pixelating & bluring textures
+
+### Comparison (click to open slider view)
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_1_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_1_a.jpg&r_label=UniqFX:%20Demake">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_1_a.jpg" width="100%" alt="Demake 1">
+      </a>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_2_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_2_a.jpg&r_label=UniqFX:%20Demake">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_2_a.jpg" width="100%" alt="Demake 2">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_3_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_3_a.jpg&r_label=UniqFX:%20Demake">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_3_a.jpg" width="100%" alt="Demake 3">
+      </a>
+    </td>
+    <td width="50%" align="center">
+      <a href="https://dwojtasik.github.io/SliderCompareHtml/?l_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_4_b.jpg&l_label=No%20effect&r_img=https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_4_a.jpg&r_label=UniqFX:%20Demake">
+        <img src="https://raw.githubusercontent.com/dwojtasik/SliderCompareHtml/refs/heads/main/assets/UniqFX/Demake/scct_4_a.jpg" width="100%" alt="Demake 4">
+      </a>
     </td>
   </tr>
 </table>
