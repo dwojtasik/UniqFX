@@ -1,11 +1,12 @@
 /*=============================================================================
     UniqFX : FakeBumpMap
-    Version: 2026.09.17
+    Version: 2026.09.20
     Author : Dominik Wojtasik
     License: MIT
     Source : https://github.com/dwojtasik/UniqFX
 
-    Requires iMMERSE shaders installed: https://github.com/martymcmodding/iMMERSE
+    Requires iMMERSE by Marty McFly shaders installed:
+    https://github.com/martymcmodding/iMMERSE
 
     Relights large planes with a textured normal: colour *= (Nt·L+a)/(Ng·L+a)
     Experimentally allows to extrude surface fragments by pixel walk.
@@ -854,7 +855,8 @@
         ui_label = "UniqFX: FakeBumpMap";
         ui_tooltip =
             "Relights large planes with a textured normal.\n"
-            "Requires iMMERSE shaders installed: https://github.com/martymcmodding/iMMERSE\n"
+            "Requires iMMERSE by Marty McFly shaders installed:\n"
+            "https://github.com/martymcmodding/iMMERSE\n"
             "\n"
             "Set TEXTURED_NORMAL_PROVIDER and place this shader below the provider:\n"
             "• 0: iMMERSE Launchpad (Smoothed + Textured Normal Map Mode).\n"
@@ -875,19 +877,24 @@
     uniform int UI_HELP <
         ui_type = "radio";
         ui_label = " ";
-        ui_text = 
-            "This shader requires iMMERSE shaders installed:\n"
+        ui_text =
+            "This shader requires iMMERSE by Marty McFly shaders installed:\n"
             "https://github.com/martymcmodding/iMMERSE\n"
-            "Please install it first before use!";
+            "\n"
+            "Download shaders from GitHub or install via shader-list during ReShade installation.\n"
+            "Currently they are not installed so this shader does nothing.";
     >;
 
     technique FakeBumpMap
     <
         ui_label = "UniqFX: FakeBumpMap";
         ui_tooltip =
-            "This shader requires iMMERSE shaders installed:\n"
+            "Relights large planes with a textured normal.\n"
+            "This shader requires iMMERSE by Marty McFly shaders installed:\n"
             "https://github.com/martymcmodding/iMMERSE\n"
-            "Please install it first before use!";
+            "\n"
+            "Download shaders from GitHub or install via shader-list during ReShade installation.\n"
+            "Currently they are not installed so this shader does nothing.";
     >
     {
     }

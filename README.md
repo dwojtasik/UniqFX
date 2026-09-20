@@ -1,5 +1,5 @@
 # UniqFX
-My shader collection for [ReShade](https://reshade.me).
+Shader collection for [ReShade](https://reshade.me).
 
  * [Conditional UI Mask](#conditional-ui-mask)
  * [FakeBumpMap](#fakebumpmap)
